@@ -218,6 +218,7 @@ module.exports = class Client {
    * @prop {boolean} [DEBUG] Enable debug mode
    * @prop {'data' | 'prodata' | 'widgetdata'} [server] Server type
    * @prop {string} [location] Auth page location (For france: https://fr.tradingview.com/)
+   * @prop {string} [wsProxyUrl] WebSocket proxy URL (for Docker networking fix)
    */
 
   /**
@@ -227,8 +228,19 @@ module.exports = class Client {
   constructor(clientOptions = {}) {
     if (clientOptions.DEBUG) global.TW_DEBUG = clientOptions.DEBUG;
 
+    // Support custom proxy URL for Docker networking fix
+    // If WS_PROXY_URL is set, use it instead of direct TradingView connection
+    const proxyUrl = clientOptions.wsProxyUrl || process.env.WS_PROXY_URL;
     const server = clientOptions.server || 'data';
-    this.#ws = new WebSocket(`wss://${server}.tradingview.com/socket.io/websocket?type=chart`, {
+    const wsUrl = proxyUrl 
+      ? `${proxyUrl}?type=chart&server=${server}`
+      : `wss://${server}.tradingview.com/socket.io/websocket?type=chart`;
+    
+    if (proxyUrl) {
+      console.log('[TradingView Client] Using WebSocket proxy:', proxyUrl);
+    }
+    
+    this.#ws = new WebSocket(wsUrl, {
       origin: 'https://www.tradingview.com',
     });
 
