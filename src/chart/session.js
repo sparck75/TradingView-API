@@ -186,7 +186,9 @@ module.exports = (client) => class ChartSession {
       onData: (packet) => {
         if (global.TW_DEBUG) console.log('§90§30§106 CHART SESSION §0 DATA', packet);
 
+        // Debug: Check if packet.data[1] is a study ID (direct routing)
         if (typeof packet.data[1] === 'string' && this.#studyListeners[packet.data[1]]) {
+          console.log('[ChartSession] ✓ Direct study routing:', packet.data[1], 'Type:', packet.type);
           this.#studyListeners[packet.data[1]](packet);
           return;
         }
@@ -203,6 +205,12 @@ module.exports = (client) => class ChartSession {
 
         if (['timescale_update', 'du'].includes(packet.type)) {
           const changes = [];
+          
+          // Debug: Log all keys in packet.data[1]
+          const dataKeys = Object.keys(packet.data[1] || {});
+          if (dataKeys.length > 0) {
+            console.log('[ChartSession] Processing', packet.type, 'with keys:', dataKeys);
+          }
 
           Object.keys(packet.data[1]).forEach((k) => {
             changes.push(k);
@@ -225,7 +233,22 @@ module.exports = (client) => class ChartSession {
               return;
             }
 
-            if (this.#studyListeners[k]) this.#studyListeners[k](packet);
+            // Debug: Check if key is a study ID
+            if (k.startsWith('st_')) {
+              if (this.#studyListeners[k]) {
+                console.log('[ChartSession] ✓ Calling study listener for:', k);
+                this.#studyListeners[k](packet);
+              } else {
+                console.log('[ChartSession] ⚠ No listener registered for study:', k);
+                console.log('[ChartSession] ⚠ Registered listeners:', Object.keys(this.#studyListeners));
+              }
+              return;
+            }
+
+            if (this.#studyListeners[k]) {
+              console.log('[ChartSession] ✓ Calling listener for key:', k);
+              this.#studyListeners[k](packet);
+            }
           });
 
           this.#handleEvent('update', changes);
