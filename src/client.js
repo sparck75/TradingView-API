@@ -274,20 +274,26 @@ module.exports = class Client {
     }
 
     this.#ws.on('open', () => {
+      console.log('[TradingView Client] ✅ WebSocket OPEN event fired');
       this.#handleEvent('connected');
       this.sendQueue();
     });
 
     this.#ws.on('close', () => {
+      console.log('[TradingView Client] ❌ WebSocket CLOSE event fired');
       this.#logged = false;
       this.#handleEvent('disconnected');
     });
 
     this.#ws.on('error', (err) => {
+      console.log('[TradingView Client] ⚠ WebSocket ERROR:', err.message);
       this.#handleError('WebSocket error:', err.message);
     });
 
-    this.#ws.on('message', (data) => this.#parsePacket(data));
+    this.#ws.on('message', (data) => {
+      console.log('[TradingView Client] ✅ MESSAGE RECEIVED:', data.length, 'bytes');
+      this.#parsePacket(data);
+    });
   }
 
   /** @type {ClientBridge} */
