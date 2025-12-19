@@ -232,12 +232,17 @@ module.exports = class Client {
     // If WS_PROXY_URL is set, use it instead of direct TradingView connection
     const proxyUrl = clientOptions.wsProxyUrl || process.env.WS_PROXY_URL;
     const server = clientOptions.server || 'data';
+    
     const wsUrl = proxyUrl 
       ? `${proxyUrl}?type=chart&server=${server}`
       : `wss://${server}.tradingview.com/socket.io/websocket?type=chart`;
     
     if (proxyUrl) {
-      console.log('[TradingView Client] Using WebSocket proxy:', proxyUrl);
+      console.log('[TradingView Client] ✓ Using WebSocket proxy:', proxyUrl);
+      console.log('[TradingView Client] ✓ WebSocket URL:', wsUrl);
+    } else {
+      console.log('[TradingView Client] ✗ Direct connection to TradingView');
+      console.log('[TradingView Client] ✗ WebSocket URL:', wsUrl);
     }
     
     this.#ws = new WebSocket(wsUrl, {
