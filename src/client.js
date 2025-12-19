@@ -154,24 +154,37 @@ module.exports = class Client {
     this.#callbacks.event.push(cb);
   }
 
-  #parsePacket(str) {
-    if (!this.isOpen) return;
+  #parsePacket(data) {
+    if (!this.isOpen) {
+      console.log('[TradingView Client] ⚠ parsePacket called but isOpen=false');
+      return;
+    }
 
-    protocol.parseWSPacket(str).forEach((packet) => {
+    // Convert Buffer to string
+    const str = typeof data === 'string' ? data : data.toString();
+    console.log('[TradingView Client] #parsePacket called with', str.length, 'chars');
+
+    const packets = protocol.parseWSPacket(str);
+    console.log('[TradingView Client] Parsed', packets.length, 'packet(s)');
+    
+    packets.forEach((packet) => {
       if (global.TW_DEBUG) console.log('§90§30§107 CLIENT §0 PACKET', packet);
       if (typeof packet === 'number') { // Ping
+        console.log('[TradingView Client] Received PING:', packet);
         this.#ws.send(protocol.formatWSPacket(`~h~${packet}`));
         this.#handleEvent('ping', packet);
         return;
       }
 
       if (packet.m === 'protocol_error') { // Error
+        console.log('[TradingView Client] Received protocol_error');
         this.#handleError('Client critical error:', packet.p);
         this.#ws.close();
         return;
       }
 
       if (packet.m && packet.p) { // Normal packet
+        console.log('[TradingView Client] Received packet type:', packet.m, 'session:', packet.p[0]);
         const parsed = {
           type: packet.m,
           data: packet.p,
@@ -180,16 +193,21 @@ module.exports = class Client {
         const session = packet.p[0];
 
         if (session && this.#sessions[session]) {
+          console.log('[TradingView Client] Routing to session:', session);
           this.#sessions[session].onData(parsed);
           return;
+        } else if (session) {
+          console.log('[TradingView Client] ⚠ No handler for session:', session);
         }
       }
 
       if (!this.#logged) {
+        console.log('[TradingView Client] Logging in with packet');
         this.#handleEvent('logged', packet);
         return;
       }
 
+      console.log('[TradingView Client] Unhandled packet, firing data event');
       this.#handleEvent('data', packet);
     });
   }
@@ -291,9 +309,15 @@ module.exports = class Client {
     });
 
     this.#ws.on('message', (data) => {
-      console.log('[TradingView Client] ✅ MESSAGE RECEIVED:', data.length, 'bytes');
+      const preview = data.toString().substring(0, 100);
+      console.log('[TradingView Client] ✅ MESSAGE RECEIVED:', data.length, 'bytes, preview:', preview);
       this.#parsePacket(data);
     });
+    
+    // Additional diagnostics
+    setInterval(() => {
+      console.log('[TradingView Client] WebSocket readyState:', this.#ws.readyState, '(1=OPEN, 0=CONNECTING, 2=CLOSING, 3=CLOSED)');
+    }, 10000);
   }
 
   /** @type {ClientBridge} */
