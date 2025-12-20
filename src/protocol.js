@@ -22,30 +22,14 @@ module.exports = {
         if (!p) return false;
         try {
           const parsed = JSON.parse(p);
-          
-          // Debug: Detect indicator data messages
-          if (parsed.m === 'du' && parsed.p && parsed.p[1]) {
-            const keys = Object.keys(parsed.p[1]);
-            const studyKeys = keys.filter(k => k.startsWith('st_'));
-            if (studyKeys.length > 0) {
-              console.log('[Protocol] *** INDICATOR DATA DETECTED ***');
-              console.log('[Protocol]   Study IDs:', studyKeys);
-              console.log('[Protocol]   Packet type:', parsed.m);
-              console.log('[Protocol]   Session:', parsed.p[0]);
-            }
-          }
-          
           return parsed;
         } catch (error) {
-          console.warn('Cant parse', p);
+          // Only warn on parse errors in debug mode
+          if (global.TW_DEBUG) console.warn('[Protocol] Parse error:', p.substring(0, 50));
           return false;
         }
       })
       .filter((p) => p);
-    
-    if (global.TW_DEBUG && packets.length > 0) {
-      console.log(`[Protocol] Parsed ${packets.length} packet(s) from ${str.length} bytes`);
-    }
     
     return packets;
   },

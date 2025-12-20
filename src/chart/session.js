@@ -186,9 +186,8 @@ module.exports = (client) => class ChartSession {
       onData: (packet) => {
         if (global.TW_DEBUG) console.log('§90§30§106 CHART SESSION §0 DATA', packet);
 
-        // Debug: Check if packet.data[1] is a study ID (direct routing)
+        // Direct study routing
         if (typeof packet.data[1] === 'string' && this.#studyListeners[packet.data[1]]) {
-          console.log('[ChartSession] ✓ Direct study routing:', packet.data[1], 'Type:', packet.type);
           this.#studyListeners[packet.data[1]](packet);
           return;
         }
