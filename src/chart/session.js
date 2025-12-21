@@ -205,10 +205,13 @@ module.exports = (client) => class ChartSession {
         if (['timescale_update', 'du'].includes(packet.type)) {
           const changes = [];
           
-          // Only log if not a regular data update (du)
-          const dataKeys = Object.keys(packet.data[1] || {});
-          if (dataKeys.length > 0 && packet.type !== 'du') {
-            console.log('[ChartSession] Processing', packet.type, 'with keys:', dataKeys);
+          // Completely suppress verbose processing logs for data updates
+          // Only log in debug mode
+          if (global.TW_DEBUG) {
+            const dataKeys = Object.keys(packet.data[1] || {});
+            if (dataKeys.length > 0) {
+              console.log('[ChartSession] Processing', packet.type, 'with keys:', dataKeys);
+            }
           }
 
           Object.keys(packet.data[1]).forEach((k) => {
