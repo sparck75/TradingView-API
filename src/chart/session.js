@@ -205,9 +205,9 @@ module.exports = (client) => class ChartSession {
         if (['timescale_update', 'du'].includes(packet.type)) {
           const changes = [];
           
-          // Debug: Log all keys in packet.data[1]
+          // Only log if not a regular data update (du)
           const dataKeys = Object.keys(packet.data[1] || {});
-          if (dataKeys.length > 0) {
+          if (dataKeys.length > 0 && packet.type !== 'du') {
             console.log('[ChartSession] Processing', packet.type, 'with keys:', dataKeys);
           }
 
@@ -232,12 +232,12 @@ module.exports = (client) => class ChartSession {
               return;
             }
 
-            // Debug: Check if key is a study ID
+            // Only log study listeners in non-debug mode if there's an issue
             if (k.startsWith('st_')) {
               if (this.#studyListeners[k]) {
-                console.log('[ChartSession] ✓ Calling study listener for:', k);
+                // Silently call listener - no debug logs for regular updates
                 this.#studyListeners[k](packet);
-              } else {
+              } else if (global.TW_DEBUG) {
                 console.log('[ChartSession] ⚠ No listener registered for study:', k);
                 console.log('[ChartSession] ⚠ Registered listeners:', Object.keys(this.#studyListeners));
               }
@@ -245,7 +245,7 @@ module.exports = (client) => class ChartSession {
             }
 
             if (this.#studyListeners[k]) {
-              console.log('[ChartSession] ✓ Calling listener for key:', k);
+              // Silently call listener - no debug logs
               this.#studyListeners[k](packet);
             }
           });
